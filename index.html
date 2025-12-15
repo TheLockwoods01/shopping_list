@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Aldi Plan</title>
+    <title>Lockwood Shop</title>
+    
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
+
     <style>
         :root {
             --primary: #004e98;
@@ -45,11 +49,10 @@
 
         /* --- Inputs --- */
         .add-zone {
-            padding: 15px;
+            padding: 10px 15px;
             background: white;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            gap: 10px;
+            display: flex; gap: 10px; align-items: center;
         }
         input, select {
             padding: 12px;
@@ -62,118 +65,98 @@
         .btn-add {
             background: var(--green); color: white;
             border: none; border-radius: 8px;
-            padding: 0 20px; font-weight: bold;
+            padding: 0 20px; font-weight: bold; height: 44px;
         }
 
-        /* --- Cards --- */
+        /* --- Search Bar --- */
+        .search-box {
+            width: 100%; padding: 10px; margin-bottom: 10px;
+            border: 1px solid #ddd; border-radius: 8px;
+            font-size: 1rem; background: #f9f9f9;
+        }
+
+        /* --- Cards & Lists --- */
         .content-area { padding: 15px; }
         
         .aisle-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
+            background: white; border-radius: 12px; overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border: 1px solid #e0e0e0;
+            margin-bottom: 25px; border: 1px solid #e0e0e0;
         }
         .aisle-header {
-            background: #f8f9fa;
-            padding: 12px 15px;
-            font-size: 0.85rem;
-            font-weight: 900;
-            color: #444;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            background: #f8f9fa; padding: 12px 15px;
+            font-size: 0.85rem; font-weight: 900; color: #444;
+            text-transform: uppercase; letter-spacing: 0.5px;
             border-bottom: 1px solid var(--border);
         }
 
-        /* --- Rows --- */
+        /* --- Item Rows --- */
         .item-row {
-            padding: 16px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            background: white;
-            transition: background 0.2s;
+            padding: 16px; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; background: white;
         }
         .item-row:last-child { border-bottom: none; }
-        
-        /* Visual State for "DONE" items */
-        .item-row.is-done {
-            background: #f9fdf9;
-        }
-        .item-row.is-done .item-name {
-            color: #aaa; 
-            text-decoration: line-through;
-        }
-
+        .item-row.is-done { background: #f9fdf9; }
+        .item-row.is-done .item-name { color: #aaa; text-decoration: line-through; }
         .item-info { flex-grow: 1; padding-right: 10px; }
         .item-name { font-size: 1.1rem; line-height: 1.3; display: block; color: #333; }
-        
-        /* --- Buttons --- */
-        
-        /* Orange Circle (Move to Sains) */
-        .btn-circle-sains {
-            width: 44px; height: 44px;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            background: white;
-            color: var(--accent);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem;
-            font-weight: bold;
-            margin-right: 8px; 
-            cursor: pointer;
-            flex-shrink: 0;
+
+        /* --- Recipe Styling --- */
+        .recipe-card {
+            background: white; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
+            border: 1px solid #e0e0e0;
+        }
+        .recipe-header {
+            padding: 15px; display: flex; justify-content: space-between; align-items: center;
+            background: #fff; border-bottom: 1px solid #eee; cursor: pointer;
+        }
+        .recipe-title { font-weight: bold; font-size: 1.1rem; color: var(--primary); }
+        .recipe-body { padding: 15px; display: none; background: #fcfcfc; }
+        .recipe-body.open { display: block; }
+        .ing-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .ing-row input[type="checkbox"] { width: 24px; height: 24px; margin-right: 15px; }
+        .btn-recipe-add { 
+            width: 100%; padding: 12px; margin-top: 15px;
+            background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem;
         }
 
-        /* PILL BUTTONS (Got it) */
-        .btn-pill {
-            background: white; 
-            border: 2px solid #ccc; 
-            color: #999;
-            border-radius: 20px; 
-            min-width: 80px; 
-            padding: 0 15px; 
-            height: 44px; 
-            font-weight: bold; 
-            font-size: 0.95rem;
-            flex-shrink: 0;
-            cursor: pointer;
+        /* --- Buttons --- */
+        .btn-circle-sains {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 2px solid var(--accent); background: white; color: var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; font-weight: bold; margin-right: 8px; flex-shrink: 0;
         }
-        /* Active State (Green) */
+        .btn-pill {
+            background: white; border: 2px solid #ccc; color: #999;
+            border-radius: 20px; min-width: 80px; padding: 0 15px; height: 44px;
+            font-weight: bold; font-size: 0.95rem; flex-shrink: 0;
+        }
         .btn-pill.active {
-            background: var(--green); 
-            border-color: var(--green); 
-            color: white;
+            background: var(--green); border-color: var(--green); color: white;
             box-shadow: 0 2px 5px rgba(40, 167, 69, 0.3);
         }
-        
+
         /* Qty Badge */
         .qty-badge {
-            background: #eee; color: #555;
-            min-width: 28px; height: 28px;
-            border-radius: 14px;
-            display: inline-flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; font-weight: bold;
-            margin-right: 12px;
+            background: #eee; color: #555; min-width: 28px; height: 28px;
+            border-radius: 14px; display: inline-flex; align-items: center; justify-content: center;
+            font-size: 0.9rem; font-weight: bold; margin-right: 12px;
         }
         .active .qty-badge { background: var(--primary); color: white; }
 
         /* --- Nav --- */
         nav {
             position: fixed; bottom: 0; width: 100%;
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(10px);
-            border-top: 1px solid #ccc;
-            display: flex; height: 75px;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);
+            border-top: 1px solid #ccc; display: flex; height: 75px;
             padding-bottom: env(safe-area-inset-bottom);
         }
         .nav-item {
             flex: 1; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            border: none; background: none;
-            color: #999; font-size: 0.75rem; font-weight: 600;
+            border: none; background: none; color: #999; font-size: 0.75rem; font-weight: 600;
         }
         .nav-item span { font-size: 1.5rem; margin-bottom: 4px; }
         .nav-item.active { color: var(--primary); }
@@ -182,8 +165,7 @@
         .modal-bg {
             display: none; position: fixed; z-index: 1000;
             top:0; left:0; right:0; bottom:0;
-            background: rgba(0,0,0,0.5);
-            align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.5); align-items: center; justify-content: center;
             backdrop-filter: blur(3px);
         }
         .modal {
@@ -213,7 +195,18 @@
         <input type="text" id="newInput" class="input-grow" placeholder="Add new item...">
         <button class="btn-add" onclick="addItem()">Add</button>
     </div>
-    <div class="content-area" id="list-kitchen"></div>
+    <div class="content-area">
+        <input type="text" id="search-bar" class="search-box" placeholder="🔍 Search kitchen items..." onkeyup="renderKitchen()">
+        <div id="list-kitchen"></div>
+    </div>
+</div>
+
+<div id="page-recipes" class="page hidden">
+    <div class="add-zone">
+        <input type="text" id="newRecipeInput" class="input-grow" placeholder="New Recipe Name...">
+        <button class="btn-add" onclick="createRecipe()">Create</button>
+    </div>
+    <div class="content-area" id="list-recipes"></div>
 </div>
 
 <div id="page-aldi" class="page hidden">
@@ -227,6 +220,9 @@
 <nav>
     <button class="nav-item active" onclick="go('kitchen')">
         <span>🏠</span> Kitchen
+    </button>
+    <button class="nav-item" onclick="go('recipes')">
+        <span>👨‍🍳</span> Chef
     </button>
     <button class="nav-item" onclick="go('aldi')">
         <span>🛒</span> Aldi
@@ -269,17 +265,42 @@
     </div>
 </div>
 
+<div id="modal-recipe" class="modal-bg">
+    <div class="modal">
+        <h2>Edit Recipe</h2>
+        <input type="hidden" id="rec-id">
+        <div style="margin-bottom:15px;">
+            <label class="label">Recipe Name</label>
+            <input type="text" id="rec-name" style="width:100%; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:15px;">
+            <label class="label">Add Ingredient (Type & Enter)</label>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="rec-new-ing" style="flex:1;" placeholder="e.g. Mince">
+                <button class="btn-add" onclick="addIngredientToRecipe()">+</button>
+            </div>
+        </div>
+        <div id="rec-ing-list" style="max-height:150px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:15px;"></div>
+
+        <div class="modal-btns">
+            <button class="btn-full" style="background:#ffebee; color:#d32f2f;" onclick="deleteRecipe()">Delete Recipe</button>
+            <button class="btn-full" style="background:#eee; color:#333;" onclick="closeRecModal()">Done</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // --- DATA ---
-    let items = JSON.parse(localStorage.getItem('shopMaster_v1')) || [
-        { id: 1, name: 'Bananas', aisle: 1, side: 'A', order: 10, qty: 0, status: 'idle' },
-        { id: 2, name: 'Eggs', aisle: 5, side: 'A', order: 1, qty: 0, status: 'idle' },
-        { id: 3, name: 'Bread', aisle: 6, side: 'B', order: 50, qty: 0, status: 'idle' }
-    ];
+    let items = JSON.parse(localStorage.getItem('shopMaster_v1')) || [];
+    let recipes = JSON.parse(localStorage.getItem('shopRecipes_v1')) || [];
 
     function save() {
         localStorage.setItem('shopMaster_v1', JSON.stringify(items));
         render();
+    }
+    function saveRecipes() {
+        localStorage.setItem('shopRecipes_v1', JSON.stringify(recipes));
+        renderRecipes();
     }
 
     // --- NAVIGATION ---
@@ -293,23 +314,30 @@
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const navs = document.querySelectorAll('.nav-item');
         if(tab === 'kitchen') navs[0].classList.add('active');
-        if(tab === 'aldi') navs[1].classList.add('active');
-        if(tab === 'sains') navs[2].classList.add('active');
+        if(tab === 'recipes') navs[1].classList.add('active');
+        if(tab === 'aldi') navs[2].classList.add('active');
+        if(tab === 'sains') navs[3].classList.add('active');
 
-        const titles = { 'kitchen': 'Kitchen Plan', 'aldi': 'Aldi Mission', 'sains': 'Sainsbury\'s' };
+        const titles = { 'kitchen': 'Kitchen Plan', 'recipes': 'Recipes', 'aldi': 'Aldi Mission', 'sains': 'Sainsbury\'s' };
         document.getElementById('header-title').innerText = titles[tab];
 
         const rBtn = document.getElementById('reset-btn');
+        rBtn.classList.add('hidden');
         if(tab === 'kitchen') rBtn.classList.remove('hidden');
-        else rBtn.classList.add('hidden');
 
         render();
     }
 
-    // --- ACTIONS ---
+    // --- KITCHEN ACTIONS ---
     function addItem() {
         const txt = document.getElementById('newInput').value.trim();
         if(!txt) return;
+        // Check if exists
+        const exists = items.find(i => i.name.toLowerCase() === txt.toLowerCase());
+        if(exists) {
+            alert("Item already exists!");
+            return;
+        }
         items.push({ id: Date.now(), name: txt, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
         document.getElementById('newInput').value = '';
         save();
@@ -330,6 +358,48 @@
         }
     }
 
+    // --- RECIPE ACTIONS ---
+    function createRecipe() {
+        const name = document.getElementById('newRecipeInput').value.trim();
+        if(!name) return;
+        recipes.push({ id: Date.now(), name: name, ingredients: [] });
+        document.getElementById('newRecipeInput').value = '';
+        saveRecipes();
+    }
+
+    function toggleRecipeView(id) {
+        const el = document.getElementById('rec-body-'+id);
+        el.classList.toggle('open');
+    }
+
+    function addRecipeToPlan(id) {
+        const rec = recipes.find(r => r.id === id);
+        // Find checked checkboxes
+        const checkboxes = document.querySelectorAll(`.rec-check-${id}:checked`);
+        let addedCount = 0;
+
+        checkboxes.forEach(box => {
+            const ingName = box.value;
+            // Does this item exist in Master List?
+            let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
+            
+            if(item) {
+                // Item exists, just activate it
+                if(item.qty === 0) item.qty = 1;
+                if(item.status === 'idle') item.status = 'active';
+            } else {
+                // Create new item
+                items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
+            }
+            addedCount++;
+        });
+        
+        save();
+        alert(`Added ${addedCount} items from ${rec.name} to your list.`);
+        go('kitchen');
+    }
+
+    // --- ALDI/SAINS ACTIONS ---
     function toggleAldiDone(id) {
         const i = items.find(x => x.id === id);
         if(i.status === 'active') i.status = 'done_aldi';
@@ -353,19 +423,51 @@
     // --- RENDERERS ---
     function render() {
         if(tab === 'kitchen') renderKitchen();
+        if(tab === 'recipes') renderRecipes();
         if(tab === 'aldi') renderAldi();
         if(tab === 'sains') renderSains();
     }
 
     function renderKitchen() {
+        const search = document.getElementById('search-bar').value.toLowerCase();
         const sorted = [...items].sort((a,b) => a.name.localeCompare(b.name));
-        const html = sorted.map(i => `
+        
+        const filtered = sorted.filter(i => i.name.toLowerCase().includes(search));
+
+        const html = filtered.map(i => `
             <div class="item-row ${i.qty > 0 ? 'active' : 'inactive'}" style="border-bottom:1px solid #eee;" onclick="toggleQty(${i.id})">
                 <span class="qty-badge">${i.qty}</span>
                 <span class="item-name">${i.name}</span>
             </div>
         `).join('');
         document.getElementById('list-kitchen').innerHTML = `<div class="aisle-card">${html}</div>`;
+    }
+
+    function renderRecipes() {
+        const div = document.getElementById('list-recipes');
+        if(recipes.length === 0) {
+            div.innerHTML = '<div class="empty-msg">No recipes yet. Create one above!</div>';
+            return;
+        }
+
+        div.innerHTML = recipes.map(r => `
+            <div class="recipe-card">
+                <div class="recipe-header" onclick="toggleRecipeView(${r.id})">
+                    <span class="recipe-title">${r.name}</span>
+                    <button class="btn-add" style="padding:5px 10px; height:auto; font-size:0.8rem;" onclick="event.stopPropagation(); openRecModal(${r.id})">Edit</button>
+                </div>
+                <div id="rec-body-${r.id}" class="recipe-body">
+                    ${r.ingredients.length === 0 ? '<i>No ingredients added yet.</i>' : ''}
+                    ${r.ingredients.map(ing => `
+                        <div class="ing-row">
+                            <input type="checkbox" class="rec-check-${r.id}" value="${ing}" checked>
+                            <span>${ing}</span>
+                        </div>
+                    `).join('')}
+                    ${r.ingredients.length > 0 ? `<button class="btn-recipe-add" onclick="addRecipeToPlan(${r.id})">Add Selected to Plan</button>` : ''}
+                </div>
+            </div>
+        `).join('');
     }
 
     function renderAldi() {
@@ -445,7 +547,7 @@
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 
-    // --- EDIT MODAL ---
+    // --- ITEM EDIT MODAL ---
     let editId = null;
     function openEdit(id) {
         editId = id;
@@ -477,6 +579,50 @@
             closeModal();
         }
     }
+
+    // --- RECIPE EDIT MODAL ---
+    let recEditId = null;
+    function openRecModal(id) {
+        recEditId = id;
+        const r = recipes.find(x => x.id === id);
+        document.getElementById('rec-name').value = r.name;
+        renderRecIngList(r);
+        document.getElementById('modal-recipe').style.display = 'flex';
+    }
+    function closeRecModal() {
+        document.getElementById('modal-recipe').style.display = 'none';
+        saveRecipes(); // Auto save on close
+    }
+    function deleteRecipe() {
+        if(confirm('Delete Recipe?')) {
+            recipes = recipes.filter(r => r.id !== recEditId);
+            saveRecipes();
+            closeRecModal();
+        }
+    }
+    function addIngredientToRecipe() {
+        const txt = document.getElementById('rec-new-ing').value.trim();
+        if(!txt) return;
+        const r = recipes.find(x => x.id === recEditId);
+        r.ingredients.push(txt);
+        document.getElementById('rec-new-ing').value = '';
+        renderRecIngList(r);
+    }
+    function removeIngredient(idx) {
+        const r = recipes.find(x => x.id === recEditId);
+        r.ingredients.splice(idx, 1);
+        renderRecIngList(r);
+    }
+    function renderRecIngList(r) {
+        document.getElementById('rec-ing-list').innerHTML = r.ingredients.map((ing, idx) => `
+            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;">
+                <span>${ing}</span>
+                <button onclick="removeIngredient(${idx})" style="color:red; border:none; background:none;">✕</button>
+            </div>
+        `).join('');
+    }
+
+    // Init
     go('kitchen');
 </script>
 </body>

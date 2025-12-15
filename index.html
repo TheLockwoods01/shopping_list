@@ -29,43 +29,29 @@
 
         /* --- Header --- */
         header {
-            background: white;
-            padding: 15px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            background: white; padding: 15px 20px;
+            position: sticky; top: 0; z-index: 100;
             border-bottom: 1px solid #ccc;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         h1 { margin: 0; font-size: 1.3rem; color: var(--primary); font-weight: 800; }
         .header-btn {
-            background: none; border: none; 
-            color: var(--primary); font-weight: bold; font-size: 0.9rem;
-            padding: 5px 10px;
+            background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 0 10px;
         }
 
         /* --- Inputs --- */
         .add-zone {
-            padding: 10px 15px;
-            background: white;
-            border-bottom: 1px solid var(--border);
+            padding: 10px 15px; background: white; border-bottom: 1px solid var(--border);
             display: flex; gap: 10px; align-items: center;
         }
-        input, select {
-            padding: 12px;
-            border: 1px solid #c7c7cc;
-            border-radius: 8px;
-            font-size: 1rem;
-            background: #fff;
+        input, select, textarea {
+            padding: 12px; border: 1px solid #c7c7cc; border-radius: 8px;
+            font-size: 1rem; background: #fff; width: 100%; box-sizing: border-box;
         }
-        .input-grow { flex-grow: 1; }
         .btn-add {
-            background: var(--green); color: white;
-            border: none; border-radius: 8px;
-            padding: 0 20px; font-weight: bold; height: 44px;
+            background: var(--green); color: white; border: none; border-radius: 8px;
+            padding: 0 20px; font-weight: bold; height: 44px; white-space: nowrap;
         }
 
         /* --- Search Bar --- */
@@ -172,6 +158,7 @@
             background: white; width: 85%; max-width: 400px;
             border-radius: 16px; padding: 25px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            max-height: 80vh; overflow-y: auto;
         }
         .modal h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px;}
         .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
@@ -187,12 +174,12 @@
 
 <header>
     <h1 id="header-title">Plan List</h1>
-    <button class="header-btn hidden" id="reset-btn" onclick="resetAll()">Reset (0)</button>
+    <button class="header-btn" onclick="openSettings()">⚙️</button>
 </header>
 
 <div id="page-kitchen" class="page">
     <div class="add-zone">
-        <input type="text" id="newInput" class="input-grow" placeholder="Add new item...">
+        <input type="text" id="newInput" style="flex-grow:1;" placeholder="Add new item...">
         <button class="btn-add" onclick="addItem()">Add</button>
     </div>
     <div class="content-area">
@@ -203,7 +190,7 @@
 
 <div id="page-recipes" class="page hidden">
     <div class="add-zone">
-        <input type="text" id="newRecipeInput" class="input-grow" placeholder="New Recipe Name...">
+        <input type="text" id="newRecipeInput" style="flex-grow:1;" placeholder="New Recipe Name...">
         <button class="btn-add" onclick="createRecipe()">Create</button>
     </div>
     <div class="content-area" id="list-recipes"></div>
@@ -218,18 +205,10 @@
 </div>
 
 <nav>
-    <button class="nav-item active" onclick="go('kitchen')">
-        <span>🏠</span> Kitchen
-    </button>
-    <button class="nav-item" onclick="go('recipes')">
-        <span>👨‍🍳</span> Chef
-    </button>
-    <button class="nav-item" onclick="go('aldi')">
-        <span>🛒</span> Aldi
-    </button>
-    <button class="nav-item" onclick="go('sains')">
-        <span>🍊</span> Sains
-    </button>
+    <button class="nav-item active" onclick="go('kitchen')"><span>🏠</span> Kitchen</button>
+    <button class="nav-item" onclick="go('recipes')"><span>👨‍🍳</span> Chef</button>
+    <button class="nav-item" onclick="go('aldi')"><span>🛒</span> Aldi</button>
+    <button class="nav-item" onclick="go('sains')"><span>🍊</span> Sains</button>
 </nav>
 
 <div id="modal-overlay" class="modal-bg">
@@ -238,16 +217,16 @@
         <input type="hidden" id="edit-id">
         <div style="margin-bottom:15px;">
             <label class="label">Item Name</label>
-            <input type="text" id="edit-name" style="width:100%; box-sizing:border-box;">
+            <input type="text" id="edit-name">
         </div>
         <div class="form-row">
             <div style="flex:1">
                 <label class="label">Aisle (1-99)</label>
-                <input type="number" id="edit-aisle" style="width:100%; box-sizing:border-box;">
+                <input type="number" id="edit-aisle">
             </div>
             <div style="flex:1">
                 <label class="label">Side</label>
-                <select id="edit-side" style="width:100%; box-sizing:border-box;">
+                <select id="edit-side">
                     <option value="A">A (Start)</option>
                     <option value="B">B (End)</option>
                 </select>
@@ -255,7 +234,7 @@
         </div>
         <div style="margin-bottom:15px;">
             <label class="label">Order (1-100)</label>
-            <input type="number" id="edit-order" style="width:100%; box-sizing:border-box;">
+            <input type="number" id="edit-order">
         </div>
         <div class="modal-btns">
             <button class="btn-full" style="background:#ffebee; color:#d32f2f;" onclick="deleteItem()">Delete</button>
@@ -271,7 +250,7 @@
         <input type="hidden" id="rec-id">
         <div style="margin-bottom:15px;">
             <label class="label">Recipe Name</label>
-            <input type="text" id="rec-name" style="width:100%; box-sizing:border-box;">
+            <input type="text" id="rec-name">
         </div>
         <div style="margin-bottom:15px;">
             <label class="label">Add Ingredient (Type & Enter)</label>
@@ -281,10 +260,26 @@
             </div>
         </div>
         <div id="rec-ing-list" style="max-height:150px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:15px;"></div>
-
         <div class="modal-btns">
             <button class="btn-full" style="background:#ffebee; color:#d32f2f;" onclick="deleteRecipe()">Delete Recipe</button>
             <button class="btn-full" style="background:#eee; color:#333;" onclick="closeRecModal()">Done</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-settings" class="modal-bg">
+    <div class="modal">
+        <h2>⚙️ Settings</h2>
+        
+        <label class="label">Manage Data</label>
+        <button class="btn-full" style="background:var(--primary); color:white; margin-bottom:10px;" onclick="exportData()">💾 Backup Data (Copy)</button>
+        <button class="btn-full" style="background:#eee; color:#333; margin-bottom:20px;" onclick="importDataPrompt()">📥 Restore Data (Paste)</button>
+
+        <label class="label">Shop Actions</label>
+        <button class="btn-full" style="background:#ffebee; color:#d32f2f; margin-bottom:10px;" onclick="resetAll()">🔄 Reset Quantities (0)</button>
+        
+        <div class="modal-btns">
+            <button class="btn-full" style="background:#eee; color:#333;" onclick="closeSettings()">Close</button>
         </div>
     </div>
 </div>
@@ -294,37 +289,23 @@
     let items = JSON.parse(localStorage.getItem('shopMaster_v1')) || [];
     let recipes = JSON.parse(localStorage.getItem('shopRecipes_v1')) || [];
 
-    function save() {
-        localStorage.setItem('shopMaster_v1', JSON.stringify(items));
-        render();
-    }
-    function saveRecipes() {
-        localStorage.setItem('shopRecipes_v1', JSON.stringify(recipes));
-        renderRecipes();
-    }
+    function save() { localStorage.setItem('shopMaster_v1', JSON.stringify(items)); render(); }
+    function saveRecipes() { localStorage.setItem('shopRecipes_v1', JSON.stringify(recipes)); renderRecipes(); }
 
     // --- NAVIGATION ---
     let tab = 'kitchen';
-    
     function go(newTab) {
         tab = newTab;
         document.querySelectorAll('.page').forEach(el => el.classList.add('hidden'));
         document.getElementById('page-' + tab).classList.remove('hidden');
-        
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
         const navs = document.querySelectorAll('.nav-item');
         if(tab === 'kitchen') navs[0].classList.add('active');
         if(tab === 'recipes') navs[1].classList.add('active');
         if(tab === 'aldi') navs[2].classList.add('active');
         if(tab === 'sains') navs[3].classList.add('active');
-
         const titles = { 'kitchen': 'Kitchen Plan', 'recipes': 'Recipes', 'aldi': 'Aldi Mission', 'sains': 'Sainsbury\'s' };
         document.getElementById('header-title').innerText = titles[tab];
-
-        const rBtn = document.getElementById('reset-btn');
-        rBtn.classList.add('hidden');
-        if(tab === 'kitchen') rBtn.classList.remove('hidden');
-
         render();
     }
 
@@ -332,17 +313,12 @@
     function addItem() {
         const txt = document.getElementById('newInput').value.trim();
         if(!txt) return;
-        // Check if exists
         const exists = items.find(i => i.name.toLowerCase() === txt.toLowerCase());
-        if(exists) {
-            alert("Item already exists!");
-            return;
-        }
+        if(exists) { alert("Item already exists!"); return; }
         items.push({ id: Date.now(), name: txt, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
         document.getElementById('newInput').value = '';
         save();
     }
-
     function toggleQty(id) {
         const i = items.find(x => x.id === id);
         i.qty = (i.qty + 1) % 4; 
@@ -350,11 +326,11 @@
         if(i.qty === 0) i.status = 'idle'; 
         save();
     }
-
     function resetAll() {
         if(confirm('Start fresh? (Resets all quantities to 0)')) {
             items.forEach(i => { i.qty = 0; i.status = 'idle'; });
             save();
+            closeSettings();
         }
     }
 
@@ -366,36 +342,26 @@
         document.getElementById('newRecipeInput').value = '';
         saveRecipes();
     }
-
     function toggleRecipeView(id) {
-        const el = document.getElementById('rec-body-'+id);
-        el.classList.toggle('open');
+        document.getElementById('rec-body-'+id).classList.toggle('open');
     }
-
     function addRecipeToPlan(id) {
         const rec = recipes.find(r => r.id === id);
-        // Find checked checkboxes
         const checkboxes = document.querySelectorAll(`.rec-check-${id}:checked`);
-        let addedCount = 0;
-
+        let count = 0;
         checkboxes.forEach(box => {
             const ingName = box.value;
-            // Does this item exist in Master List?
             let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
-            
             if(item) {
-                // Item exists, just activate it
                 if(item.qty === 0) item.qty = 1;
                 if(item.status === 'idle') item.status = 'active';
             } else {
-                // Create new item
                 items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
             }
-            addedCount++;
+            count++;
         });
-        
         save();
-        alert(`Added ${addedCount} items from ${rec.name} to your list.`);
+        alert(`Added ${count} items from ${rec.name}.`);
         go('kitchen');
     }
 
@@ -406,18 +372,48 @@
         else if(i.status === 'done_aldi') i.status = 'active'; 
         save();
     }
-
     function moveToSains(id) {
         const i = items.find(x => x.id === id);
         i.status = 'sains';
         save();
     }
-
     function toggleSainsDone(id) {
         const i = items.find(x => x.id === id);
         if(i.status === 'sains') i.status = 'done_sains';
         else if(i.status === 'done_sains') i.status = 'sains'; 
         save();
+    }
+
+    // --- SETTINGS (BACKUP) ---
+    function openSettings() { document.getElementById('modal-settings').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('modal-settings').style.display = 'none'; }
+    
+    function exportData() {
+        const data = { items: items, recipes: recipes };
+        const json = JSON.stringify(data);
+        navigator.clipboard.writeText(json).then(() => {
+            alert("Data copied to clipboard! \n\nPaste this into a Note or Email to save it.");
+        });
+    }
+
+    function importDataPrompt() {
+        const json = prompt("Paste your Backup Code here:");
+        if(!json) return;
+        try {
+            const data = JSON.parse(json);
+            if(data.items && data.recipes) {
+                items = data.items;
+                recipes = data.recipes;
+                save();
+                saveRecipes();
+                alert("Restore successful!");
+                closeSettings();
+            } else {
+                alert("Invalid code.");
+            }
+        } catch(e) {
+            alert("Error reading code.");
+        }
     }
 
     // --- RENDERERS ---
@@ -427,13 +423,10 @@
         if(tab === 'aldi') renderAldi();
         if(tab === 'sains') renderSains();
     }
-
     function renderKitchen() {
         const search = document.getElementById('search-bar').value.toLowerCase();
         const sorted = [...items].sort((a,b) => a.name.localeCompare(b.name));
-        
         const filtered = sorted.filter(i => i.name.toLowerCase().includes(search));
-
         const html = filtered.map(i => `
             <div class="item-row ${i.qty > 0 ? 'active' : 'inactive'}" style="border-bottom:1px solid #eee;" onclick="toggleQty(${i.id})">
                 <span class="qty-badge">${i.qty}</span>
@@ -442,14 +435,9 @@
         `).join('');
         document.getElementById('list-kitchen').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
-
     function renderRecipes() {
         const div = document.getElementById('list-recipes');
-        if(recipes.length === 0) {
-            div.innerHTML = '<div class="empty-msg">No recipes yet. Create one above!</div>';
-            return;
-        }
-
+        if(recipes.length === 0) { div.innerHTML = '<div class="empty-msg">No recipes yet.</div>'; return; }
         div.innerHTML = recipes.map(r => `
             <div class="recipe-card">
                 <div class="recipe-header" onclick="toggleRecipeView(${r.id})">
@@ -457,43 +445,28 @@
                     <button class="btn-add" style="padding:5px 10px; height:auto; font-size:0.8rem;" onclick="event.stopPropagation(); openRecModal(${r.id})">Edit</button>
                 </div>
                 <div id="rec-body-${r.id}" class="recipe-body">
-                    ${r.ingredients.length === 0 ? '<i>No ingredients added yet.</i>' : ''}
                     ${r.ingredients.map(ing => `
-                        <div class="ing-row">
-                            <input type="checkbox" class="rec-check-${r.id}" value="${ing}" checked>
-                            <span>${ing}</span>
-                        </div>
+                        <div class="ing-row"><input type="checkbox" class="rec-check-${r.id}" value="${ing}" checked><span>${ing}</span></div>
                     `).join('')}
-                    ${r.ingredients.length > 0 ? `<button class="btn-recipe-add" onclick="addRecipeToPlan(${r.id})">Add Selected to Plan</button>` : ''}
+                    ${r.ingredients.length > 0 ? `<button class="btn-recipe-add" onclick="addRecipeToPlan(${r.id})">Add to Plan</button>` : ''}
                 </div>
             </div>
         `).join('');
     }
-
     function renderAldi() {
         const needed = items.filter(i => (i.status === 'active' || i.status === 'done_aldi') && i.qty > 0);
-        if(!needed.length) {
-            document.getElementById('list-aldi').innerHTML = '<div class="empty-msg">List is empty.</div>';
-            return;
-        }
-
+        if(!needed.length) { document.getElementById('list-aldi').innerHTML = '<div class="empty-msg">List is empty.</div>'; return; }
         needed.sort((a,b) => {
             if(a.aisle !== b.aisle) return a.aisle - b.aisle;
             if(a.side !== b.side) return a.side.localeCompare(b.side);
             return a.order - b.order;
         });
-
-        let html = '';
-        let currentAisleKey = '';
-        let itemsInGroup = [];
-
+        let html = ''; let currentAisleKey = ''; let itemsInGroup = [];
         const flushGroup = () => {
             if(itemsInGroup.length === 0) return;
             const example = itemsInGroup[0];
             const headerText = example.aisle === 99 ? "Unsorted" : `Aisle ${example.aisle} • Side ${example.side}`;
-            
             html += `<div class="aisle-card"><div class="aisle-header">${headerText}</div>`;
-            
             itemsInGroup.forEach(i => {
                 const isDone = (i.status === 'done_aldi');
                 html += `
@@ -501,125 +474,73 @@
                     <div class="item-info" onclick="openEdit(${i.id})">
                         <div class="item-name"><span style="color:var(--primary); font-weight:bold;">(${i.qty})</span> ${i.name}</div>
                     </div>
-                    
                     <button class="btn-circle-sains" onclick="moveToSains(${i.id})">S</button>
-                    
-                    <button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleAldiDone(${i.id})">
-                        ${isDone ? '✔ Got it' : 'Got it'}
-                    </button>
+                    <button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleAldiDone(${i.id})">${isDone ? '✔ Got it' : 'Got it'}</button>
                 </div>`;
             });
             html += `</div>`;
         };
-
         needed.forEach(item => {
             const key = `${item.aisle}-${item.side}`;
-            if(key !== currentAisleKey) {
-                flushGroup();
-                currentAisleKey = key;
-                itemsInGroup = [];
-            }
+            if(key !== currentAisleKey) { flushGroup(); currentAisleKey = key; itemsInGroup = []; }
             itemsInGroup.push(item);
         });
         flushGroup();
         document.getElementById('list-aldi').innerHTML = html;
     }
-
     function renderSains() {
         const list = items.filter(i => i.status === 'sains' || i.status === 'done_sains');
-        if(!list.length) {
-            document.getElementById('list-sains').innerHTML = '<div class="empty-msg">No items here.</div>';
-            return;
-        }
-        
+        if(!list.length) { document.getElementById('list-sains').innerHTML = '<div class="empty-msg">No items here.</div>'; return; }
         const html = list.map(i => {
             const isDone = (i.status === 'done_sains');
-            return `
-            <div class="item-row ${isDone ? 'is-done' : ''}">
-                <div class="item-info">
-                    <div class="item-name"><strong>(${i.qty})</strong> ${i.name}</div>
-                </div>
-                <button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleSainsDone(${i.id})">
-                    ${isDone ? '✔ Got it' : 'Got it'}
-                </button>
-            </div>
-        `}).join('');
+            return `<div class="item-row ${isDone ? 'is-done' : ''}"><div class="item-info"><div class="item-name"><strong>(${i.qty})</strong> ${i.name}</div></div><button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleSainsDone(${i.id})">${isDone ? '✔ Got it' : 'Got it'}</button></div>`
+        }).join('');
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 
-    // --- ITEM EDIT MODAL ---
-    let editId = null;
+    // --- MODALS ---
+    let editId = null; let recEditId = null;
     function openEdit(id) {
-        editId = id;
-        const i = items.find(x => x.id === id);
+        editId = id; const i = items.find(x => x.id === id);
         document.getElementById('edit-name').value = i.name;
         document.getElementById('edit-aisle').value = i.aisle;
         document.getElementById('edit-side').value = i.side;
         document.getElementById('edit-order').value = i.order;
         document.getElementById('modal-overlay').style.display = 'flex';
     }
-    function closeModal() {
-        document.getElementById('modal-overlay').style.display = 'none';
-        editId = null;
-    }
+    function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; editId = null; }
     function saveEdit() {
-        if(!editId) return;
-        const i = items.find(x => x.id === editId);
+        if(!editId) return; const i = items.find(x => x.id === editId);
         i.name = document.getElementById('edit-name').value;
         i.aisle = parseInt(document.getElementById('edit-aisle').value);
         i.side = document.getElementById('edit-side').value;
         i.order = parseInt(document.getElementById('edit-order').value);
-        save();
-        closeModal();
+        save(); closeModal();
     }
-    function deleteItem() {
-        if(confirm('Delete forever?')) {
-            items = items.filter(x => x.id !== editId);
-            save();
-            closeModal();
-        }
-    }
+    function deleteItem() { if(confirm('Delete forever?')) { items = items.filter(x => x.id !== editId); save(); closeModal(); } }
 
-    // --- RECIPE EDIT MODAL ---
-    let recEditId = null;
     function openRecModal(id) {
-        recEditId = id;
-        const r = recipes.find(x => x.id === id);
+        recEditId = id; const r = recipes.find(x => x.id === id);
         document.getElementById('rec-name').value = r.name;
         renderRecIngList(r);
         document.getElementById('modal-recipe').style.display = 'flex';
     }
-    function closeRecModal() {
-        document.getElementById('modal-recipe').style.display = 'none';
-        saveRecipes(); // Auto save on close
-    }
-    function deleteRecipe() {
-        if(confirm('Delete Recipe?')) {
-            recipes = recipes.filter(r => r.id !== recEditId);
-            saveRecipes();
-            closeRecModal();
-        }
-    }
+    function closeRecModal() { document.getElementById('modal-recipe').style.display = 'none'; saveRecipes(); }
+    function deleteRecipe() { if(confirm('Delete Recipe?')) { recipes = recipes.filter(r => r.id !== recEditId); saveRecipes(); closeRecModal(); } }
     function addIngredientToRecipe() {
         const txt = document.getElementById('rec-new-ing').value.trim();
-        if(!txt) return;
-        const r = recipes.find(x => x.id === recEditId);
-        r.ingredients.push(txt);
-        document.getElementById('rec-new-ing').value = '';
-        renderRecIngList(r);
+        if(!txt) return; const r = recipes.find(x => x.id === recEditId);
+        r.ingredients.push(txt); document.getElementById('rec-new-ing').value = ''; renderRecIngList(r);
     }
     function removeIngredient(idx) {
         const r = recipes.find(x => x.id === recEditId);
-        r.ingredients.splice(idx, 1);
-        renderRecIngList(r);
+        r.ingredients.splice(idx, 1); renderRecIngList(r);
     }
     function renderRecIngList(r) {
         document.getElementById('rec-ing-list').innerHTML = r.ingredients.map((ing, idx) => `
             <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;">
-                <span>${ing}</span>
-                <button onclick="removeIngredient(${idx})" style="color:red; border:none; background:none;">✕</button>
-            </div>
-        `).join('');
+                <span>${ing}</span><button onclick="removeIngredient(${idx})" style="color:red; border:none; background:none;">✕</button>
+            </div>`).join('');
     }
 
     // Init

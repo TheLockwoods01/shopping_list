@@ -253,9 +253,9 @@
             <input type="text" id="rec-name">
         </div>
         <div style="margin-bottom:15px;">
-            <label class="label">Add Ingredient (Type & Enter)</label>
+            <label class="label">Add Ingredient</label>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="rec-new-ing" style="flex:1;" placeholder="e.g. Mince">
+                <input type="text" id="rec-new-ing" style="flex:1;" placeholder="Type to search..." list="kitchen-suggestions">
                 <button class="btn-add" onclick="addIngredientToRecipe()">+</button>
             </div>
         </div>
@@ -283,6 +283,8 @@
         </div>
     </div>
 </div>
+
+<datalist id="kitchen-suggestions"></datalist>
 
 <script>
     // --- DATA ---
@@ -387,15 +389,11 @@
     // --- SETTINGS (BACKUP) ---
     function openSettings() { document.getElementById('modal-settings').style.display = 'flex'; }
     function closeSettings() { document.getElementById('modal-settings').style.display = 'none'; }
-    
     function exportData() {
         const data = { items: items, recipes: recipes };
         const json = JSON.stringify(data);
-        navigator.clipboard.writeText(json).then(() => {
-            alert("Data copied to clipboard! \n\nPaste this into a Note or Email to save it.");
-        });
+        navigator.clipboard.writeText(json).then(() => { alert("Data copied to clipboard! \n\nPaste this into a Note or Email to save it."); });
     }
-
     function importDataPrompt() {
         const json = prompt("Paste your Backup Code here:");
         if(!json) return;
@@ -404,16 +402,10 @@
             if(data.items && data.recipes) {
                 items = data.items;
                 recipes = data.recipes;
-                save();
-                saveRecipes();
-                alert("Restore successful!");
-                closeSettings();
-            } else {
-                alert("Invalid code.");
-            }
-        } catch(e) {
-            alert("Error reading code.");
-        }
+                save(); saveRecipes();
+                alert("Restore successful!"); closeSettings();
+            } else { alert("Invalid code."); }
+        } catch(e) { alert("Error reading code."); }
     }
 
     // --- RENDERERS ---
@@ -498,6 +490,18 @@
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 
+    // --- SUGGESTION ENGINE ---
+    function populateSuggestions() {
+        const dataList = document.getElementById('kitchen-suggestions');
+        dataList.innerHTML = ''; 
+        const sorted = [...items].sort((a,b) => a.name.localeCompare(b.name));
+        sorted.forEach(i => {
+            const option = document.createElement('option');
+            option.value = i.name;
+            dataList.appendChild(option);
+        });
+    }
+
     // --- MODALS ---
     let editId = null; let recEditId = null;
     function openEdit(id) {
@@ -522,6 +526,7 @@
     function openRecModal(id) {
         recEditId = id; const r = recipes.find(x => x.id === id);
         document.getElementById('rec-name').value = r.name;
+        populateSuggestions(); // Update the list of options
         renderRecIngList(r);
         document.getElementById('modal-recipe').style.display = 'flex';
     }

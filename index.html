@@ -114,6 +114,12 @@
             display: flex; align-items: center; justify-content: center;
             font-size: 1rem; font-weight: bold; margin-right: 8px; flex-shrink: 0;
         }
+        .btn-undo {
+            width: 44px; height: 44px; border-radius: 50%;
+            border: 2px solid #999; background: white; color: #999;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; margin-right: 8px; flex-shrink: 0;
+        }
         .btn-pill {
             background: white; border: 2px solid #ccc; color: #999;
             border-radius: 20px; min-width: 80px; padding: 0 15px; height: 44px;
@@ -355,9 +361,14 @@
             const ingName = box.value;
             let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
             if(item) {
-                if(item.qty === 0) item.qty = 1;
-                if(item.status === 'idle') item.status = 'active';
+                // MATHS UPDATE: Add to existing Qty instead of just setting to 1
+                item.qty = (item.qty || 0) + 1;
+                // Ensure it is on the active list
+                if(item.status === 'idle' || item.status === 'done_aldi' || item.status === 'done_sains') {
+                    item.status = 'active';
+                }
             } else {
+                // Create new item with qty 1
                 items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
             }
             count++;
@@ -383,6 +394,11 @@
         const i = items.find(x => x.id === id);
         if(i.status === 'sains') i.status = 'done_sains';
         else if(i.status === 'done_sains') i.status = 'sains'; 
+        save();
+    }
+    function revertToAldi(id) {
+        const i = items.find(x => x.id === id);
+        i.status = 'active'; // Move back to main list
         save();
     }
 
@@ -430,7 +446,11 @@
     function renderRecipes() {
         const div = document.getElementById('list-recipes');
         if(recipes.length === 0) { div.innerHTML = '<div class="empty-msg">No recipes yet.</div>'; return; }
-        div.innerHTML = recipes.map(r => `
+        
+        // SORTING UPDATE: Sort recipes A-Z
+        const sortedRecipes = [...recipes].sort((a,b) => a.name.localeCompare(b.name));
+
+        div.innerHTML = sortedRecipes.map(r => `
             <div class="recipe-card">
                 <div class="recipe-header" onclick="toggleRecipeView(${r.id})">
                     <span class="recipe-title">${r.name}</span>
@@ -481,12 +501,28 @@
         document.getElementById('list-aldi').innerHTML = html;
     }
     function renderSains() {
-        const list = items.filter(i => i.status === 'sains' || i.status === 'done_sains');
+        const list = items.filter(i => (i.status === 'sains' || i.status === 'done_sains') && i.qty > 0);
         if(!list.length) { document.getElementById('list-sains').innerHTML = '<div class="empty-msg">No items here.</div>'; return; }
-        const html = list.map(i => {
+        
+        // SORTING UPDATE: Same logic as Aldi
+        list.sort((a,b) => {
+            if(a.aisle !== b.aisle) return a.aisle - b.aisle;
+            if(a.side !== b.side) return a.side.localeCompare(b.side);
+            return a.order - b.order;
+        });
+
+        let html = '';
+        list.forEach(i => {
             const isDone = (i.status === 'done_sains');
-            return `<div class="item-row ${isDone ? 'is-done' : ''}"><div class="item-info"><div class="item-name"><strong>(${i.qty})</strong> ${i.name}</div></div><button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleSainsDone(${i.id})">${isDone ? '✔ Got it' : 'Got it'}</button></div>`
-        }).join('');
+            html += `
+            <div class="item-row ${isDone ? 'is-done' : ''}">
+                <div class="item-info">
+                    <div class="item-name"><strong>(${i.qty})</strong> ${i.name}</div>
+                </div>
+                <button class="btn-undo" onclick="revertToAldi(${i.id})">↩️</button>
+                <button class="btn-pill ${isDone ? 'active' : ''}" onclick="toggleSainsDone(${i.id})">${isDone ? '✔ Got it' : 'Got it'}</button>
+            </div>`;
+        });
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 

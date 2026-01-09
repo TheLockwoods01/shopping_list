@@ -47,7 +47,7 @@
         }
         input, select, textarea {
             padding: 12px; border: 1px solid #c7c7cc; border-radius: 8px;
-            font-size: 1rem; background: #fff; width: 100%; box-sizing: border-box;
+            font-size: 1rem; background: #fff; width: 100%; box-sizing: border-box; font-family: inherit;
         }
         .btn-add {
             background: var(--green); color: white; border: none; border-radius: 8px;
@@ -306,16 +306,27 @@
     <div class="modal">
         <h2>⚙️ Settings</h2>
         
-        <label class="label">Manage Data</label>
-        <button class="btn-full" style="background:var(--primary); color:white; margin-bottom:10px;" onclick="exportData()">💾 Backup Data (Copy)</button>
-        <button class="btn-full" style="background:#eee; color:#333; margin-bottom:20px;" onclick="importDataPrompt()">📥 Restore Data (Paste)</button>
+        <div id="settings-main">
+            <label class="label">Manage Data</label>
+            <button class="btn-full" style="background:var(--primary); color:white; margin-bottom:10px;" onclick="exportData()">💾 Backup Data (Copy)</button>
+            <button class="btn-full" style="background:#eee; color:#333; margin-bottom:20px;" onclick="showRestoreUI()">📥 Restore Data (Paste)</button>
 
-        <label class="label">Shop Actions</label>
-        <button class="btn-full" style="background:#fff8e1; color:#f57c00; margin-bottom:10px;" onclick="resetMenu()">📅 Clear "On The Menu"</button>
-        <button class="btn-full" style="background:#ffebee; color:#d32f2f; margin-bottom:10px;" onclick="resetAll()">🔄 Reset Quantities (0)</button>
-        
-        <div class="modal-btns">
-            <button class="btn-full" style="background:#eee; color:#333;" onclick="closeSettings()">Close</button>
+            <label class="label">Shop Actions</label>
+            <button class="btn-full" style="background:#fff8e1; color:#f57c00; margin-bottom:10px;" onclick="resetMenu()">📅 Clear "On The Menu"</button>
+            <button class="btn-full" style="background:#ffebee; color:#d32f2f; margin-bottom:10px;" onclick="resetAll()">🔄 Reset Quantities (0)</button>
+            
+            <div class="modal-btns">
+                <button class="btn-full" style="background:#eee; color:#333;" onclick="closeSettings()">Close</button>
+            </div>
+        </div>
+
+        <div id="settings-restore" class="hidden">
+            <label class="label">Paste Backup Code Here:</label>
+            <textarea id="restore-input" rows="10" placeholder="{...}" style="width:100%; font-family:monospace; font-size:0.8rem; margin-bottom:10px;"></textarea>
+            <div class="modal-btns">
+                <button class="btn-full" style="background:#eee; color:#333;" onclick="hideRestoreUI()">Cancel</button>
+                <button class="btn-full" style="background:var(--green); color:white;" onclick="confirmRestore()">Load Data</button>
+            </div>
         </div>
     </div>
 </div>
@@ -455,16 +466,32 @@
         save();
     }
 
-    // --- SETTINGS (BACKUP) ---
-    function openSettings() { document.getElementById('modal-settings').style.display = 'flex'; }
+    // --- SETTINGS (BACKUP V4.1) ---
+    function openSettings() { 
+        document.getElementById('modal-settings').style.display = 'flex'; 
+        hideRestoreUI(); // Ensure we start on main screen
+    }
     function closeSettings() { document.getElementById('modal-settings').style.display = 'none'; }
+    
     function exportData() {
         const data = { items: items, recipes: recipes };
         const json = JSON.stringify(data);
         navigator.clipboard.writeText(json).then(() => { alert("Data copied! Paste into a Note."); });
     }
-    function importDataPrompt() {
-        const json = prompt("Paste your Backup Code here:");
+
+    // NEW RESTORE LOGIC
+    function showRestoreUI() {
+        document.getElementById('settings-main').style.display = 'none';
+        document.getElementById('settings-restore').classList.remove('hidden');
+        document.getElementById('restore-input').value = ''; 
+        document.getElementById('settings-restore').style.display = 'block'; 
+    }
+    function hideRestoreUI() {
+        document.getElementById('settings-restore').style.display = 'none';
+        document.getElementById('settings-main').style.display = 'block';
+    }
+    function confirmRestore() {
+        const json = document.getElementById('restore-input').value.trim();
         if(!json) return;
         try {
             const data = JSON.parse(json);
@@ -472,9 +499,12 @@
                 items = data.items;
                 recipes = data.recipes;
                 save(); saveRecipes();
-                alert("Restore successful!"); closeSettings();
-            } else { alert("Invalid code."); }
-        } catch(e) { alert("Error reading code."); }
+                alert("Restore successful!");
+                hideRestoreUI();
+                closeSettings();
+                go(tab);
+            } else { alert("Invalid code structure."); }
+        } catch(e) { alert("Error reading code: " + e.message); }
     }
 
     // --- RENDERERS ---

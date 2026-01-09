@@ -88,6 +88,24 @@
         .item-name { font-size: 1.1rem; line-height: 1.3; display: block; color: #333; }
 
         /* --- Recipe Styling --- */
+        .section-label {
+            font-size: 0.9rem; font-weight: 800; color: #8e8e93; text-transform: uppercase; 
+            margin: 20px 0 10px 5px; letter-spacing: 1px;
+        }
+        
+        /* Menu Board Cards */
+        .menu-card {
+            background: #e3f2fd; border-radius: 12px; padding: 15px; margin-bottom: 10px;
+            border: 1px solid #bbdefb; display: flex; justify-content: space-between; align-items: center;
+        }
+        .menu-title { font-weight: bold; color: #0d47a1; font-size: 1rem; }
+        .btn-remove-menu {
+            background: #fff; border: 1px solid #90caf9; color: #d32f2f;
+            width: 32px; height: 32px; border-radius: 50%; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* Standard Recipe Cards */
         .recipe-card {
             background: white; border-radius: 12px; overflow: hidden;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 15px;
@@ -97,7 +115,10 @@
             padding: 15px; display: flex; justify-content: space-between; align-items: center;
             background: #fff; border-bottom: 1px solid #eee; cursor: pointer;
         }
+        .recipe-info { display: flex; flex-direction: column; }
         .recipe-title { font-weight: bold; font-size: 1.1rem; color: var(--primary); }
+        .recipe-date { font-size: 0.8rem; color: #999; margin-top: 3px; }
+        
         .recipe-body { padding: 15px; display: none; background: #fcfcfc; }
         .recipe-body.open { display: block; }
         .ing-row { display: flex; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
@@ -199,7 +220,15 @@
         <input type="text" id="newRecipeInput" style="flex-grow:1;" placeholder="New Recipe Name...">
         <button class="btn-add" onclick="createRecipe()">Create</button>
     </div>
-    <div class="content-area" id="list-recipes"></div>
+    <div class="content-area">
+        <div id="menu-section" class="hidden">
+            <div class="section-label">📅 On The Menu</div>
+            <div id="list-menu"></div>
+        </div>
+
+        <div class="section-label" style="margin-top:20px;">📚 Recipe Book</div>
+        <div id="list-recipes"></div>
+    </div>
 </div>
 
 <div id="page-aldi" class="page hidden">
@@ -282,6 +311,7 @@
         <button class="btn-full" style="background:#eee; color:#333; margin-bottom:20px;" onclick="importDataPrompt()">📥 Restore Data (Paste)</button>
 
         <label class="label">Shop Actions</label>
+        <button class="btn-full" style="background:#fff8e1; color:#f57c00; margin-bottom:10px;" onclick="resetMenu()">📅 Clear "On The Menu"</button>
         <button class="btn-full" style="background:#ffebee; color:#d32f2f; margin-bottom:10px;" onclick="resetAll()">🔄 Reset Quantities (0)</button>
         
         <div class="modal-btns">
@@ -341,41 +371,64 @@
             closeSettings();
         }
     }
+    function resetMenu() {
+        if(confirm('Clear the Menu Board? (Recipes stay in book)')) {
+            recipes.forEach(r => r.inMenu = false);
+            saveRecipes();
+            closeSettings();
+        }
+    }
 
     // --- RECIPE ACTIONS ---
     function createRecipe() {
         const name = document.getElementById('newRecipeInput').value.trim();
         if(!name) return;
-        recipes.push({ id: Date.now(), name: name, ingredients: [] });
+        recipes.push({ id: Date.now(), name: name, ingredients: [], inMenu: false, lastDate: '' });
         document.getElementById('newRecipeInput').value = '';
         saveRecipes();
     }
     function toggleRecipeView(id) {
         document.getElementById('rec-body-'+id).classList.toggle('open');
     }
+    
+    // NEW: Remove from Menu Board
+    function removeFromMenu(id) {
+        const r = recipes.find(x => x.id === id);
+        r.inMenu = false;
+        saveRecipes();
+    }
+
+    // NEW: Add To Plan (Adds to Shopping + Adds to Menu + Stamps Date)
     function addRecipeToPlan(id) {
         const rec = recipes.find(r => r.id === id);
         const checkboxes = document.querySelectorAll(`.rec-check-${id}:checked`);
         let count = 0;
+        
+        // 1. Add Ingredients
         checkboxes.forEach(box => {
             const ingName = box.value;
             let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
             if(item) {
-                // MATHS UPDATE: Add to existing Qty instead of just setting to 1
                 item.qty = (item.qty || 0) + 1;
-                // Ensure it is on the active list
                 if(item.status === 'idle' || item.status === 'done_aldi' || item.status === 'done_sains') {
                     item.status = 'active';
                 }
             } else {
-                // Create new item with qty 1
                 items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
             }
             count++;
         });
-        save();
-        alert(`Added ${count} items from ${rec.name}.`);
-        go('kitchen');
+
+        // 2. Add to Menu Board & Date Stamp
+        rec.inMenu = true;
+        rec.lastDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+        save(); // Saves items
+        saveRecipes(); // Saves menu status
+        
+        alert(`Added to Menu Plan!\n(${count} ingredients added to list)`);
+        toggleRecipeView(id); // Close card
+        renderRecipes(); // Refresh view
     }
 
     // --- ALDI/SAINS ACTIONS ---
@@ -408,7 +461,7 @@
     function exportData() {
         const data = { items: items, recipes: recipes };
         const json = JSON.stringify(data);
-        navigator.clipboard.writeText(json).then(() => { alert("Data copied to clipboard! \n\nPaste this into a Note or Email to save it."); });
+        navigator.clipboard.writeText(json).then(() => { alert("Data copied! Paste into a Note."); });
     }
     function importDataPrompt() {
         const json = prompt("Paste your Backup Code here:");
@@ -443,28 +496,54 @@
         `).join('');
         document.getElementById('list-kitchen').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
+
     function renderRecipes() {
+        // 1. RENDER MENU BOARD
+        const menuItems = recipes.filter(r => r.inMenu);
+        const menuDiv = document.getElementById('list-menu');
+        const menuSection = document.getElementById('menu-section');
+        
+        if(menuItems.length > 0) {
+            menuSection.classList.remove('hidden');
+            menuDiv.innerHTML = menuItems.map(r => `
+                <div class="menu-card">
+                    <span class="menu-title">${r.name}</span>
+                    <button class="btn-remove-menu" onclick="removeFromMenu(${r.id})">✕</button>
+                </div>
+            `).join('');
+        } else {
+            menuSection.classList.add('hidden');
+        }
+
+        // 2. RENDER RECIPE BOOK
         const div = document.getElementById('list-recipes');
         if(recipes.length === 0) { div.innerHTML = '<div class="empty-msg">No recipes yet.</div>'; return; }
         
-        // SORTING UPDATE: Sort recipes A-Z
         const sortedRecipes = [...recipes].sort((a,b) => a.name.localeCompare(b.name));
 
-        div.innerHTML = sortedRecipes.map(r => `
+        div.innerHTML = sortedRecipes.map(r => {
+            // Sort Ingredients A-Z inside the card
+            const sortedIngs = [...r.ingredients].sort();
+            
+            return `
             <div class="recipe-card">
                 <div class="recipe-header" onclick="toggleRecipeView(${r.id})">
-                    <span class="recipe-title">${r.name}</span>
+                    <div class="recipe-info">
+                        <span class="recipe-title">${r.name}</span>
+                        ${r.lastDate ? `<span class="recipe-date">Last: ${r.lastDate}</span>` : ''}
+                    </div>
                     <button class="btn-add" style="padding:5px 10px; height:auto; font-size:0.8rem;" onclick="event.stopPropagation(); openRecModal(${r.id})">Edit</button>
                 </div>
                 <div id="rec-body-${r.id}" class="recipe-body">
-                    ${r.ingredients.map(ing => `
+                    ${sortedIngs.map(ing => `
                         <div class="ing-row"><input type="checkbox" class="rec-check-${r.id}" value="${ing}" checked><span>${ing}</span></div>
                     `).join('')}
                     ${r.ingredients.length > 0 ? `<button class="btn-recipe-add" onclick="addRecipeToPlan(${r.id})">Add to Plan</button>` : ''}
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
+
     function renderAldi() {
         const needed = items.filter(i => (i.status === 'active' || i.status === 'done_aldi') && i.qty > 0);
         if(!needed.length) { document.getElementById('list-aldi').innerHTML = '<div class="empty-msg">List is empty.</div>'; return; }
@@ -503,14 +582,11 @@
     function renderSains() {
         const list = items.filter(i => (i.status === 'sains' || i.status === 'done_sains') && i.qty > 0);
         if(!list.length) { document.getElementById('list-sains').innerHTML = '<div class="empty-msg">No items here.</div>'; return; }
-        
-        // SORTING UPDATE: Same logic as Aldi
         list.sort((a,b) => {
             if(a.aisle !== b.aisle) return a.aisle - b.aisle;
             if(a.side !== b.side) return a.side.localeCompare(b.side);
             return a.order - b.order;
         });
-
         let html = '';
         list.forEach(i => {
             const isDone = (i.status === 'done_sains');
@@ -562,7 +638,7 @@
     function openRecModal(id) {
         recEditId = id; const r = recipes.find(x => x.id === id);
         document.getElementById('rec-name').value = r.name;
-        populateSuggestions(); // Update the list of options
+        populateSuggestions(); 
         renderRecIngList(r);
         document.getElementById('modal-recipe').style.display = 'flex';
     }
@@ -578,10 +654,16 @@
         r.ingredients.splice(idx, 1); renderRecIngList(r);
     }
     function renderRecIngList(r) {
-        document.getElementById('rec-ing-list').innerHTML = r.ingredients.map((ing, idx) => `
+        // Sort Ingredients A-Z inside the edit modal too
+        const sortedIngs = [...r.ingredients].sort();
+        document.getElementById('rec-ing-list').innerHTML = sortedIngs.map((ing) => {
+            // Find real index in original array to remove correctly
+            const originalIdx = r.ingredients.indexOf(ing);
+            return `
             <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;">
-                <span>${ing}</span><button onclick="removeIngredient(${idx})" style="color:red; border:none; background:none;">✕</button>
-            </div>`).join('');
+                <span>${ing}</span><button onclick="removeIngredient(${originalIdx})" style="color:red; border:none; background:none;">✕</button>
+            </div>`;
+        }).join('');
     }
 
     // Init

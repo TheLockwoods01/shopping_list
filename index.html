@@ -54,6 +54,18 @@
             padding: 0 20px; font-weight: bold; height: 44px; white-space: nowrap;
         }
 
+        /* --- Custom Search Suggestions (Android Fix) --- */
+        .suggestions-box {
+            background: white; border: 1px solid #ccc; border-radius: 8px;
+            max-height: 200px; overflow-y: auto; margin-top: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: none;
+        }
+        .suggestion-item {
+            padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 1rem; color: #333;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:active { background: #f0f0f0; }
+
         /* --- Search Bar --- */
         .search-box {
             width: 100%; padding: 10px; margin-bottom: 10px;
@@ -97,12 +109,14 @@
         .menu-card {
             background: #e3f2fd; border-radius: 12px; padding: 15px; margin-bottom: 10px;
             border: 1px solid #bbdefb; display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; /* Makes it look clickable */
         }
         .menu-title { font-weight: bold; color: #0d47a1; font-size: 1rem; }
         .btn-remove-menu {
             background: #fff; border: 1px solid #90caf9; color: #d32f2f;
             width: 32px; height: 32px; border-radius: 50%; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
+            z-index: 5; /* Ensure button is clickable above the card click */
         }
 
         /* Standard Recipe Cards */
@@ -126,6 +140,25 @@
         .btn-recipe-add { 
             width: 100%; padding: 12px; margin-top: 15px;
             background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem;
+        }
+        
+        /* New "IN CART" Badge */
+        .in-cart-badge {
+            background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: 800;
+            padding: 3px 8px; border-radius: 10px; margin-left: 10px; letter-spacing: 0.5px;
+        }
+
+        /* New Recipe Qty Editing */
+        .rec-edit-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px 0; border-bottom: 1px solid #eee;
+        }
+        .qty-control {
+            display: flex; align-items: center; gap: 8px; background: #f0f0f5; padding: 2px; border-radius: 8px;
+        }
+        .btn-mini {
+            width: 28px; height: 28px; border: none; background: white; border-radius: 6px;
+            font-weight: bold; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
         /* --- Buttons --- */
@@ -222,7 +255,7 @@
     </div>
     <div class="content-area">
         <div id="menu-section" class="hidden">
-            <div class="section-label">📅 On The Menu</div>
+            <div class="section-label">📅 On The Menu (Tap to View)</div>
             <div id="list-menu"></div>
         </div>
 
@@ -287,14 +320,15 @@
             <label class="label">Recipe Name</label>
             <input type="text" id="rec-name">
         </div>
-        <div style="margin-bottom:15px;">
+        <div style="margin-bottom:15px; position:relative;">
             <label class="label">Add Ingredient</label>
             <div style="display:flex; gap:10px;">
-                <input type="text" id="rec-new-ing" style="flex:1;" placeholder="Type to search..." list="kitchen-suggestions">
+                <input type="text" id="rec-new-ing" style="flex:1;" placeholder="Type to search..." oninput="showSuggestions(this.value)">
                 <button class="btn-add" onclick="addIngredientToRecipe()">+</button>
             </div>
+            <div id="suggestion-box" class="suggestions-box"></div>
         </div>
-        <div id="rec-ing-list" style="max-height:150px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:15px;"></div>
+        <div id="rec-ing-list" style="max-height:250px; overflow-y:auto; border:1px solid #eee; padding:10px; border-radius:5px; margin-bottom:15px;"></div>
         <div class="modal-btns">
             <button class="btn-full" style="background:#ffebee; color:#d32f2f;" onclick="deleteRecipe()">Delete Recipe</button>
             <button class="btn-full" style="background:#eee; color:#333;" onclick="closeRecModal()">Done</button>
@@ -331,12 +365,24 @@
     </div>
 </div>
 
-<datalist id="kitchen-suggestions"></datalist>
-
 <script>
     // --- DATA ---
     let items = JSON.parse(localStorage.getItem('shopMaster_v1')) || [];
     let recipes = JSON.parse(localStorage.getItem('shopRecipes_v1')) || [];
+
+    // MIGRATION V5.0: Convert old "Array of Strings" to "Array of Objects"
+    function migrateData() {
+        let changed = false;
+        recipes.forEach(r => {
+            if (r.ingredients.length > 0 && typeof r.ingredients[0] === 'string') {
+                // This is old format. Convert!
+                r.ingredients = r.ingredients.map(name => ({ name: name, qty: 1 }));
+                changed = true;
+            }
+        });
+        if(changed) saveRecipes();
+    }
+    migrateData(); // Run on startup
 
     function save() { localStorage.setItem('shopMaster_v1', JSON.stringify(items)); render(); }
     function saveRecipes() { localStorage.setItem('shopRecipes_v1', JSON.stringify(recipes)); renderRecipes(); }
@@ -402,44 +448,51 @@
         document.getElementById('rec-body-'+id).classList.toggle('open');
     }
     
-    // NEW: Remove from Menu Board
     function removeFromMenu(id) {
         const r = recipes.find(x => x.id === id);
         r.inMenu = false;
         saveRecipes();
     }
 
-    // NEW: Add To Plan (Adds to Shopping + Adds to Menu + Stamps Date)
+    function showMenuDetails(id) {
+        const r = recipes.find(x => x.id === id);
+        let msg = "Ingredients for " + r.name + ":\n\n";
+        r.ingredients.forEach(ing => {
+            msg += `- ${ing.name} (x${ing.qty})\n`;
+        });
+        alert(msg);
+    }
+
+    // NEW ADD TO PLAN (Uses new Quantities)
     function addRecipeToPlan(id) {
         const rec = recipes.find(r => r.id === id);
         const checkboxes = document.querySelectorAll(`.rec-check-${id}:checked`);
         let count = 0;
         
-        // 1. Add Ingredients
         checkboxes.forEach(box => {
             const ingName = box.value;
+            // Find the qty from the recipe data
+            const recIng = rec.ingredients.find(ri => ri.name === ingName);
+            const qtyToAdd = recIng ? recIng.qty : 1;
+
             let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
             if(item) {
-                item.qty = (item.qty || 0) + 1;
+                item.qty = (item.qty || 0) + qtyToAdd;
                 if(item.status === 'idle' || item.status === 'done_aldi' || item.status === 'done_sains') {
                     item.status = 'active';
                 }
             } else {
-                items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: 1, status: 'active' });
+                items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: qtyToAdd, status: 'active' });
             }
             count++;
         });
 
-        // 2. Add to Menu Board & Date Stamp
         rec.inMenu = true;
         rec.lastDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-        save(); // Saves items
-        saveRecipes(); // Saves menu status
-        
-        alert(`Added to Menu Plan!\n(${count} ingredients added to list)`);
-        toggleRecipeView(id); // Close card
-        renderRecipes(); // Refresh view
+        save(); saveRecipes();
+        alert(`Added to Menu Plan!\n(${count} ingredients added)`);
+        toggleRecipeView(id); renderRecipes();
     }
 
     // --- ALDI/SAINS ACTIONS ---
@@ -462,24 +515,18 @@
     }
     function revertToAldi(id) {
         const i = items.find(x => x.id === id);
-        i.status = 'active'; // Move back to main list
+        i.status = 'active'; 
         save();
     }
 
-    // --- SETTINGS (BACKUP V4.1) ---
-    function openSettings() { 
-        document.getElementById('modal-settings').style.display = 'flex'; 
-        hideRestoreUI(); // Ensure we start on main screen
-    }
+    // --- SETTINGS ---
+    function openSettings() { document.getElementById('modal-settings').style.display = 'flex'; hideRestoreUI(); }
     function closeSettings() { document.getElementById('modal-settings').style.display = 'none'; }
-    
     function exportData() {
         const data = { items: items, recipes: recipes };
         const json = JSON.stringify(data);
         navigator.clipboard.writeText(json).then(() => { alert("Data copied! Paste into a Note."); });
     }
-
-    // NEW RESTORE LOGIC
     function showRestoreUI() {
         document.getElementById('settings-main').style.display = 'none';
         document.getElementById('settings-restore').classList.remove('hidden');
@@ -498,11 +545,11 @@
             if(data.items && data.recipes) {
                 items = data.items;
                 recipes = data.recipes;
+                // Run migration immediately in case restore data is old format
+                migrateData(); 
                 save(); saveRecipes();
                 alert("Restore successful!");
-                hideRestoreUI();
-                closeSettings();
-                go(tab);
+                hideRestoreUI(); closeSettings(); go(tab);
             } else { alert("Invalid code structure."); }
         } catch(e) { alert("Error reading code: " + e.message); }
     }
@@ -536,9 +583,9 @@
         if(menuItems.length > 0) {
             menuSection.classList.remove('hidden');
             menuDiv.innerHTML = menuItems.map(r => `
-                <div class="menu-card">
+                <div class="menu-card" onclick="showMenuDetails(${r.id})">
                     <span class="menu-title">${r.name}</span>
-                    <button class="btn-remove-menu" onclick="removeFromMenu(${r.id})">✕</button>
+                    <button class="btn-remove-menu" onclick="event.stopPropagation(); removeFromMenu(${r.id})">✕</button>
                 </div>
             `).join('');
         } else {
@@ -552,8 +599,8 @@
         const sortedRecipes = [...recipes].sort((a,b) => a.name.localeCompare(b.name));
 
         div.innerHTML = sortedRecipes.map(r => {
-            // Sort Ingredients A-Z inside the card
-            const sortedIngs = [...r.ingredients].sort();
+            // Sort Ingredients A-Z
+            const sortedIngs = [...r.ingredients].sort((a,b) => a.name.localeCompare(b.name));
             
             return `
             <div class="recipe-card">
@@ -565,9 +612,18 @@
                     <button class="btn-add" style="padding:5px 10px; height:auto; font-size:0.8rem;" onclick="event.stopPropagation(); openRecModal(${r.id})">Edit</button>
                 </div>
                 <div id="rec-body-${r.id}" class="recipe-body">
-                    ${sortedIngs.map(ing => `
-                        <div class="ing-row"><input type="checkbox" class="rec-check-${r.id}" value="${ing}" checked><span>${ing}</span></div>
-                    `).join('')}
+                    ${sortedIngs.map(ing => {
+                        // Check if item is already in cart
+                        const kitchenItem = items.find(i => i.name === ing.name);
+                        const inCart = (kitchenItem && kitchenItem.qty > 0);
+                        
+                        return `
+                        <div class="ing-row">
+                            <input type="checkbox" class="rec-check-${r.id}" value="${ing.name}" checked>
+                            <span>${ing.name} ${ing.qty > 1 ? `(x${ing.qty})` : ''}</span>
+                            ${inCart ? `<span class="in-cart-badge">IN CART</span>` : ''}
+                        </div>
+                    `}).join('')}
                     ${r.ingredients.length > 0 ? `<button class="btn-recipe-add" onclick="addRecipeToPlan(${r.id})">Add to Plan</button>` : ''}
                 </div>
             </div>
@@ -632,16 +688,24 @@
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 
-    // --- SUGGESTION ENGINE ---
-    function populateSuggestions() {
-        const dataList = document.getElementById('kitchen-suggestions');
-        dataList.innerHTML = ''; 
-        const sorted = [...items].sort((a,b) => a.name.localeCompare(b.name));
-        sorted.forEach(i => {
-            const option = document.createElement('option');
-            option.value = i.name;
-            dataList.appendChild(option);
-        });
+    // --- CUSTOM SUGGESTION ENGINE (Android Fix) ---
+    function showSuggestions(txt) {
+        const box = document.getElementById('suggestion-box');
+        if(!txt) { box.style.display = 'none'; return; }
+        
+        const matches = items.filter(i => i.name.toLowerCase().includes(txt.toLowerCase()))
+                             .sort((a,b) => a.name.localeCompare(b.name));
+        
+        if(matches.length === 0) { box.style.display = 'none'; return; }
+
+        box.innerHTML = matches.map(i => `
+            <div class="suggestion-item" onclick="selectSuggestion('${i.name}')">${i.name}</div>
+        `).join('');
+        box.style.display = 'block';
+    }
+    function selectSuggestion(name) {
+        document.getElementById('rec-new-ing').value = name;
+        document.getElementById('suggestion-box').style.display = 'none';
     }
 
     // --- MODALS ---
@@ -668,30 +732,51 @@
     function openRecModal(id) {
         recEditId = id; const r = recipes.find(x => x.id === id);
         document.getElementById('rec-name').value = r.name;
-        populateSuggestions(); 
+        document.getElementById('rec-new-ing').value = '';
+        document.getElementById('suggestion-box').style.display = 'none';
         renderRecIngList(r);
         document.getElementById('modal-recipe').style.display = 'flex';
     }
-    function closeRecModal() { document.getElementById('modal-recipe').style.display = 'none'; saveRecipes(); }
+    function closeRecModal() { document.getElementById('modal-recipe').style.display = 'none'; saveRecipes(); renderRecipes(); }
     function deleteRecipe() { if(confirm('Delete Recipe?')) { recipes = recipes.filter(r => r.id !== recEditId); saveRecipes(); closeRecModal(); } }
+    
     function addIngredientToRecipe() {
         const txt = document.getElementById('rec-new-ing').value.trim();
         if(!txt) return; const r = recipes.find(x => x.id === recEditId);
-        r.ingredients.push(txt); document.getElementById('rec-new-ing').value = ''; renderRecIngList(r);
+        // Add as Object with default Qty 1
+        r.ingredients.push({ name: txt, qty: 1 }); 
+        document.getElementById('rec-new-ing').value = ''; 
+        document.getElementById('suggestion-box').style.display = 'none';
+        renderRecIngList(r);
     }
     function removeIngredient(idx) {
         const r = recipes.find(x => x.id === recEditId);
         r.ingredients.splice(idx, 1); renderRecIngList(r);
     }
+    
+    // NEW: Update Qty of Ingredient in Recipe
+    function updateRecIngQty(idx, change) {
+        const r = recipes.find(x => x.id === recEditId);
+        const ing = r.ingredients[idx];
+        ing.qty = Math.max(1, ing.qty + change);
+        renderRecIngList(r);
+    }
+
     function renderRecIngList(r) {
-        // Sort Ingredients A-Z inside the edit modal too
-        const sortedIngs = [...r.ingredients].sort();
-        document.getElementById('rec-ing-list').innerHTML = sortedIngs.map((ing) => {
-            // Find real index in original array to remove correctly
-            const originalIdx = r.ingredients.indexOf(ing);
+        // Render rows with Qty Controls
+        const div = document.getElementById('rec-ing-list');
+        if(r.ingredients.length === 0) { div.innerHTML = '<div class="empty-msg">No ingredients.</div>'; return; }
+
+        div.innerHTML = r.ingredients.map((ing, idx) => {
             return `
-            <div style="display:flex; justify-content:space-between; padding:5px; border-bottom:1px solid #eee;">
-                <span>${ing}</span><button onclick="removeIngredient(${originalIdx})" style="color:red; border:none; background:none;">✕</button>
+            <div class="rec-edit-row">
+                <span style="flex-grow:1; font-weight:500;">${ing.name}</span>
+                <div class="qty-control">
+                    <button class="btn-mini" onclick="updateRecIngQty(${idx}, -1)">-</button>
+                    <span style="width:20px; text-align:center; font-weight:bold;">${ing.qty}</span>
+                    <button class="btn-mini" onclick="updateRecIngQty(${idx}, 1)">+</button>
+                </div>
+                <button onclick="removeIngredient(${idx})" style="color:red; border:none; background:none; margin-left:10px;">✕</button>
             </div>`;
         }).join('');
     }

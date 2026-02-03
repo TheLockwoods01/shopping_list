@@ -54,7 +54,7 @@
             padding: 0 20px; font-weight: bold; height: 44px; white-space: nowrap;
         }
 
-        /* --- Custom Search Suggestions (Android Fix) --- */
+        /* --- Custom Search Suggestions --- */
         .suggestions-box {
             background: white; border: 1px solid #ccc; border-radius: 8px;
             max-height: 200px; overflow-y: auto; margin-top: 5px;
@@ -109,14 +109,14 @@
         .menu-card {
             background: #e3f2fd; border-radius: 12px; padding: 15px; margin-bottom: 10px;
             border: 1px solid #bbdefb; display: flex; justify-content: space-between; align-items: center;
-            cursor: pointer; /* Makes it look clickable */
+            cursor: pointer;
         }
         .menu-title { font-weight: bold; color: #0d47a1; font-size: 1rem; }
         .btn-remove-menu {
             background: #fff; border: 1px solid #90caf9; color: #d32f2f;
             width: 32px; height: 32px; border-radius: 50%; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
-            z-index: 5; /* Ensure button is clickable above the card click */
+            z-index: 5; 
         }
 
         /* Standard Recipe Cards */
@@ -142,13 +142,13 @@
             background: var(--primary); color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem;
         }
         
-        /* New "IN CART" Badge */
+        /* Badges */
         .in-cart-badge {
             background: #e8f5e9; color: #2e7d32; font-size: 0.75rem; font-weight: 800;
             padding: 3px 8px; border-radius: 10px; margin-left: 10px; letter-spacing: 0.5px;
         }
 
-        /* New Recipe Qty Editing */
+        /* Recipe Qty Editing */
         .rec-edit-row {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 0; border-bottom: 1px solid #eee;
@@ -336,6 +336,24 @@
     </div>
 </div>
 
+<div id="modal-menu-details" class="modal-bg">
+    <div class="modal">
+        <h2 id="menu-details-title">Menu Details</h2>
+        <input type="hidden" id="menu-details-id">
+        
+        <div class="label" style="color:var(--green);">✅ Added to Plan:</div>
+        <div id="menu-included-list" style="margin-bottom:20px; font-size:0.9rem; color:#333; line-height:1.5;"></div>
+
+        <div class="label" style="color:#d32f2f;">❌ Left Behind (Add now?):</div>
+        <div id="menu-excluded-list" style="margin-bottom:10px; max-height:150px; overflow-y:auto; border:1px solid #eee; padding:5px; border-radius:5px;"></div>
+
+        <div class="modal-btns">
+            <button class="btn-full" style="background:#eee; color:#333;" onclick="closeMenuDetails()">Close</button>
+            <button class="btn-full" style="background:var(--primary); color:white;" onclick="addMissingItems()">Update Plan</button>
+        </div>
+    </div>
+</div>
+
 <div id="modal-settings" class="modal-bg">
     <div class="modal">
         <h2>⚙️ Settings</h2>
@@ -375,14 +393,13 @@
         let changed = false;
         recipes.forEach(r => {
             if (r.ingredients.length > 0 && typeof r.ingredients[0] === 'string') {
-                // This is old format. Convert!
                 r.ingredients = r.ingredients.map(name => ({ name: name, qty: 1 }));
                 changed = true;
             }
         });
         if(changed) saveRecipes();
     }
-    migrateData(); // Run on startup
+    migrateData(); 
 
     function save() { localStorage.setItem('shopMaster_v1', JSON.stringify(items)); render(); }
     function saveRecipes() { localStorage.setItem('shopRecipes_v1', JSON.stringify(recipes)); renderRecipes(); }
@@ -430,7 +447,7 @@
     }
     function resetMenu() {
         if(confirm('Clear the Menu Board? (Recipes stay in book)')) {
-            recipes.forEach(r => r.inMenu = false);
+            recipes.forEach(r => { r.inMenu = false; r.activeIngredients = []; });
             saveRecipes();
             closeSettings();
         }
@@ -440,7 +457,7 @@
     function createRecipe() {
         const name = document.getElementById('newRecipeInput').value.trim();
         if(!name) return;
-        recipes.push({ id: Date.now(), name: name, ingredients: [], inMenu: false, lastDate: '' });
+        recipes.push({ id: Date.now(), name: name, ingredients: [], inMenu: false, lastDate: '', activeIngredients: [] });
         document.getElementById('newRecipeInput').value = '';
         saveRecipes();
     }
@@ -451,26 +468,94 @@
     function removeFromMenu(id) {
         const r = recipes.find(x => x.id === id);
         r.inMenu = false;
+        r.activeIngredients = []; // Clear memory
         saveRecipes();
     }
 
-    function showMenuDetails(id) {
+    // NEW: Open Menu Details Modal
+    function openMenuDetails(id) {
         const r = recipes.find(x => x.id === id);
-        let msg = "Ingredients for " + r.name + ":\n\n";
-        r.ingredients.forEach(ing => {
-            msg += `- ${ing.name} (x${ing.qty})\n`;
-        });
-        alert(msg);
+        document.getElementById('menu-details-title').innerText = r.name;
+        document.getElementById('menu-details-id').value = id;
+
+        // Determine what is active (Fallback for old data: assume all)
+        const activeList = r.activeIngredients || r.ingredients.map(i => i.name);
+        
+        // Render Included
+        const includedDiv = document.getElementById('menu-included-list');
+        if(activeList.length === 0) includedDiv.innerHTML = "<i>Nothing selected.</i>";
+        else includedDiv.innerHTML = activeList.map(name => `• ${name}`).join('<br>');
+
+        // Render Excluded (Ingredients NOT in activeList)
+        const excludedDiv = document.getElementById('menu-excluded-list');
+        const excluded = r.ingredients.filter(i => !activeList.includes(i.name));
+
+        if(excluded.length === 0) {
+            excludedDiv.innerHTML = "<i>All items added!</i>";
+        } else {
+            excludedDiv.innerHTML = excluded.map(ing => `
+                <div style="padding:5px; border-bottom:1px solid #eee;">
+                    <input type="checkbox" class="missing-item-check" value="${ing.name}"> 
+                    ${ing.name}
+                </div>
+            `).join('');
+        }
+
+        document.getElementById('modal-menu-details').style.display = 'flex';
     }
 
-    // NEW ADD TO PLAN (Uses new Quantities)
+    function closeMenuDetails() { document.getElementById('modal-menu-details').style.display = 'none'; }
+
+    // NEW: Add Missing Items from Details Modal
+    function addMissingItems() {
+        const id = parseInt(document.getElementById('menu-details-id').value);
+        const r = recipes.find(x => x.id === id);
+        const checks = document.querySelectorAll('.missing-item-check:checked');
+        
+        if(checks.length === 0) { closeMenuDetails(); return; }
+
+        let count = 0;
+        // Ensure activeIngredients exists
+        if(!r.activeIngredients) r.activeIngredients = [];
+
+        checks.forEach(box => {
+            const ingName = box.value;
+            // Add to active memory
+            r.activeIngredients.push(ingName);
+
+            // Add to Shopping List
+            const recIng = r.ingredients.find(ri => ri.name === ingName);
+            const qtyToAdd = recIng ? recIng.qty : 1;
+
+            let item = items.find(i => i.name.toLowerCase() === ingName.toLowerCase());
+            if(item) {
+                item.qty = (item.qty || 0) + qtyToAdd;
+                if(item.status === 'idle' || item.status === 'done_aldi' || item.status === 'done_sains') {
+                    item.status = 'active';
+                }
+            } else {
+                items.push({ id: Date.now() + Math.random(), name: ingName, aisle: 99, side: 'A', order: 50, qty: qtyToAdd, status: 'active' });
+            }
+            count++;
+        });
+
+        save(); saveRecipes();
+        alert(`Updated! Added ${count} items.`);
+        closeMenuDetails();
+    }
+
+
+    // NEW ADD TO PLAN (Saves Active Snapshot)
     function addRecipeToPlan(id) {
         const rec = recipes.find(r => r.id === id);
         const checkboxes = document.querySelectorAll(`.rec-check-${id}:checked`);
         let count = 0;
-        
+        let activeSnapshot = []; // To store what we picked
+
         checkboxes.forEach(box => {
             const ingName = box.value;
+            activeSnapshot.push(ingName); // Save name to snapshot
+
             // Find the qty from the recipe data
             const recIng = rec.ingredients.find(ri => ri.name === ingName);
             const qtyToAdd = recIng ? recIng.qty : 1;
@@ -488,6 +573,7 @@
         });
 
         rec.inMenu = true;
+        rec.activeIngredients = activeSnapshot; // SAVE THE SNAPSHOT
         rec.lastDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
         save(); saveRecipes();
@@ -545,7 +631,6 @@
             if(data.items && data.recipes) {
                 items = data.items;
                 recipes = data.recipes;
-                // Run migration immediately in case restore data is old format
                 migrateData(); 
                 save(); saveRecipes();
                 alert("Restore successful!");
@@ -583,7 +668,7 @@
         if(menuItems.length > 0) {
             menuSection.classList.remove('hidden');
             menuDiv.innerHTML = menuItems.map(r => `
-                <div class="menu-card" onclick="showMenuDetails(${r.id})">
+                <div class="menu-card" onclick="openMenuDetails(${r.id})">
                     <span class="menu-title">${r.name}</span>
                     <button class="btn-remove-menu" onclick="event.stopPropagation(); removeFromMenu(${r.id})">✕</button>
                 </div>
@@ -599,7 +684,6 @@
         const sortedRecipes = [...recipes].sort((a,b) => a.name.localeCompare(b.name));
 
         div.innerHTML = sortedRecipes.map(r => {
-            // Sort Ingredients A-Z
             const sortedIngs = [...r.ingredients].sort((a,b) => a.name.localeCompare(b.name));
             
             return `
@@ -613,7 +697,6 @@
                 </div>
                 <div id="rec-body-${r.id}" class="recipe-body">
                     ${sortedIngs.map(ing => {
-                        // Check if item is already in cart
                         const kitchenItem = items.find(i => i.name === ing.name);
                         const inCart = (kitchenItem && kitchenItem.qty > 0);
                         
@@ -688,7 +771,7 @@
         document.getElementById('list-sains').innerHTML = `<div class="aisle-card">${html}</div>`;
     }
 
-    // --- CUSTOM SUGGESTION ENGINE (Android Fix) ---
+    // --- CUSTOM SUGGESTION ENGINE ---
     function showSuggestions(txt) {
         const box = document.getElementById('suggestion-box');
         if(!txt) { box.style.display = 'none'; return; }
@@ -743,7 +826,6 @@
     function addIngredientToRecipe() {
         const txt = document.getElementById('rec-new-ing').value.trim();
         if(!txt) return; const r = recipes.find(x => x.id === recEditId);
-        // Add as Object with default Qty 1
         r.ingredients.push({ name: txt, qty: 1 }); 
         document.getElementById('rec-new-ing').value = ''; 
         document.getElementById('suggestion-box').style.display = 'none';
@@ -754,7 +836,6 @@
         r.ingredients.splice(idx, 1); renderRecIngList(r);
     }
     
-    // NEW: Update Qty of Ingredient in Recipe
     function updateRecIngQty(idx, change) {
         const r = recipes.find(x => x.id === recEditId);
         const ing = r.ingredients[idx];
@@ -763,7 +844,6 @@
     }
 
     function renderRecIngList(r) {
-        // Render rows with Qty Controls
         const div = document.getElementById('rec-ing-list');
         if(r.ingredients.length === 0) { div.innerHTML = '<div class="empty-msg">No ingredients.</div>'; return; }
 

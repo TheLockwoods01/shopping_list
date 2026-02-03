@@ -66,11 +66,21 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:active { background: #f0f0f0; }
 
-        /* --- Search Bar --- */
+        /* --- Search Bar Wrapper (New V5.2) --- */
+        .search-wrapper {
+            position: relative; margin-bottom: 10px; width: 100%;
+        }
         .search-box {
-            width: 100%; padding: 10px; margin-bottom: 10px;
+            width: 100%; padding: 10px; padding-right: 40px; /* Space for X button */
             border: 1px solid #ddd; border-radius: 8px;
-            font-size: 1rem; background: #f9f9f9;
+            font-size: 1rem; background: #f9f9f9; box-sizing: border-box;
+            margin-bottom: 0; /* Override default */
+        }
+        .btn-clear-search {
+            position: absolute; right: 5px; top: 50%; transform: translateY(-50%);
+            border: none; background: none; color: #999; 
+            font-size: 1.2rem; font-weight: bold; cursor: pointer;
+            padding: 5px 10px; display: none; /* Hidden by default */
         }
 
         /* --- Cards & Lists --- */
@@ -243,7 +253,10 @@
         <button class="btn-add" onclick="addItem()">Add</button>
     </div>
     <div class="content-area">
-        <input type="text" id="search-bar" class="search-box" placeholder="🔍 Search kitchen items..." onkeyup="renderKitchen()">
+        <div class="search-wrapper">
+            <input type="text" id="search-bar" class="search-box" placeholder="🔍 Search kitchen items..." onkeyup="renderKitchen()">
+            <button id="btn-clear-search" class="btn-clear-search" onclick="clearSearch()">✕</button>
+        </div>
         <div id="list-kitchen"></div>
     </div>
 </div>
@@ -452,6 +465,12 @@
             closeSettings();
         }
     }
+    
+    // NEW: Clear Search Action
+    function clearSearch() {
+        document.getElementById('search-bar').value = '';
+        renderKitchen();
+    }
 
     // --- RECIPE ACTIONS ---
     function createRecipe() {
@@ -486,9 +505,10 @@
         if(activeList.length === 0) includedDiv.innerHTML = "<i>Nothing selected.</i>";
         else includedDiv.innerHTML = activeList.map(name => `• ${name}`).join('<br>');
 
-        // Render Excluded (Ingredients NOT in activeList)
+        // Render Excluded (SORTED A-Z)
         const excludedDiv = document.getElementById('menu-excluded-list');
-        const excluded = r.ingredients.filter(i => !activeList.includes(i.name));
+        const excluded = r.ingredients.filter(i => !activeList.includes(i.name))
+                                      .sort((a,b) => a.name.localeCompare(b.name));
 
         if(excluded.length === 0) {
             excludedDiv.innerHTML = "<i>All items added!</i>";
@@ -650,6 +670,10 @@
         const search = document.getElementById('search-bar').value.toLowerCase();
         const sorted = [...items].sort((a,b) => a.name.localeCompare(b.name));
         const filtered = sorted.filter(i => i.name.toLowerCase().includes(search));
+        
+        // Show/Hide Clear Button
+        document.getElementById('btn-clear-search').style.display = search ? 'block' : 'none';
+
         const html = filtered.map(i => `
             <div class="item-row ${i.qty > 0 ? 'active' : 'inactive'}" style="border-bottom:1px solid #eee;" onclick="toggleQty(${i.id})">
                 <span class="qty-badge">${i.qty}</span>
